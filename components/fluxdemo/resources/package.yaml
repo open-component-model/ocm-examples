@@ -1,6 +1,18 @@
 templateResource:
   name: kubernetes-manifests
 
+fluxTemplate:
+  kind: Kustomization
+  spec:
+    interval: 10m0s
+    prune: true
+    targetNamespace: (( namespace ))
+
+configTemplate:
+  color: red
+  message: Welcome to podinfo!
+  imagePullSecrets: []
+
 configRules:
   - value: (( color ))
     file: configmap.yaml
@@ -11,14 +23,23 @@ configRules:
   - value: (( color ))-value
     file: config/configmap.yaml
     path: data.VALUE
+  - value: (( imagePullSecrets ))
+    file: serviceaccount.yaml
+    path: imagePullSecrets
 
 configScheme:
   type: object
   properties:
+    namespace:
+      type: string
     color:
       type: string
     message:
       type: string
+    imagePullSecrets:
+      type: array
+      items:
+        type: string
   additionalProperties: false
 
 localizationRules:

@@ -17,6 +17,7 @@ spec:
       containers:
       - image: ghcr.io/stefanprodan/podinfo:6.2.0
         name: podinfo
+        serviceAccountName: podinfo
         ports:
         - containerPort: 9898
           name: http
