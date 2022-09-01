@@ -21,20 +21,20 @@ ctf: $(GEN)/ctf
 
 $(GEN)/ctf: $(GEN)/ca
 	$(OCM) transfer ca $(GEN)/ca $(GEN)/ctf
-	touch $(GEN)/ctf
+	@touch $@
 
 .PHONY: plain-ctf
-plain-ctf: $(GEN)
+plain-ctf: $(GEN)/.exists
 	$(OCM) transfer ca $(GEN)/ca $(GEN)/ctf
-	touch $(GEN)/ctf
+	@touch $(GEN)/ctf
 
 .PHONY: ca
 ca: $(GEN)/ca
 
-$(GEN)/ca: $(GEN) resources.yaml $(SRCS)
+$(GEN)/ca: $(GEN)/.exists resources.yaml $(SRCS)
 	$(OCM) create ca -f $(COMPONENT) "$(VERSION)" $(PROVIDER) $(GEN)/ca
 	$(OCM) add resources $(GEN)/ca VERSION="$(VERSION)" COMMIT="$(COMMIT)" IMAGE="$(IMAGE):$(VERSION)" resources.yaml
-	touch $(GEN)/ca
+	@touch $@
 
 
 .PHONY: keys
@@ -52,14 +52,16 @@ $(GEN)/signed: $(GEN)/ctf $(KEY)
 ifneq ($(KEY),)
 	$(OCM) sign component -s $(SIGNATURE) -K $(KEY) $(GEN)/ctf
 endif
-	touch $(GEN)/signed
+	@touch $(GEN)/ctf
+	@touch $@
 
 .PHONY: resign
 resign: $(GEN)/ctf $(KEY)
 ifneq ($(KEY),)
 	$(OCM) sign component -s $(SIGNATURE) -K $(KEY) $(GEN)/ctf
 endif
-	touch $(GEN)/signed
+	@touch $(GEN)/signed
+	@touch $(GEN)/signed
 
 .PHONY: verify
 verify:
@@ -73,15 +75,16 @@ push: $(GEN)/signed $(GEN)/push.$(NAME)
 
 $(GEN)/push.$(NAME): $(GEN)/ctf
 	$(OCM) transfer ctf -f $(GEN)/ctf $(OCMREPO)
-	touch $(GEN)/push.$(NAME)
+	@touch $@
 
 .PHONY: plain-push
-plain-push: $(GEN)
+plain-push: $(GEN)/.exists
 	$(OCM) transfer ctf -f $(GEN)/ctf $(OCMREPO)
-	touch $(GEN)/push.$(NAME)
+	@touch $(GEN)/push.$(NAME)
 
-$(GEN):
-	mkdir -p $(GEN)
+$(GEN)/.exists:
+	@mkdir -p $(GEN)
+	@touch $@
 
 .PHONY: transport
 transport:
