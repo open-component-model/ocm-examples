@@ -1,0 +1,287 @@
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  creationTimestamp: null
+  name: manager-role
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - configmaps
+  - secrets
+  - serviceaccounts
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - ""
+  resources:
+  - secrets
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - ""
+  resources:
+  - services
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - apps
+  resources:
+  - deployments
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - image.toolkit.fluxcd.io
+  resources:
+  - imagepolicies
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - image.toolkit.fluxcd.io
+  resources:
+  - imagerepositories
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - kustomize.toolkit.fluxcd.io
+  resources:
+  - kustomizations
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - source.toolkit.fluxcd.io
+  resources:
+  - buckets
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - source.toolkit.fluxcd.io
+  resources:
+  - ocirepositories
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - transfer.phoban.io
+  resources:
+  - components
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - transfer.phoban.io
+  resources:
+  - components/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - transfer.phoban.io
+  resources:
+  - components/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - transfer.phoban.io
+  resources:
+  - componentsyncs
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - transfer.phoban.io
+  resources:
+  - componentsyncs/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - transfer.phoban.io
+  resources:
+  - componentsyncs/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - transfer.phoban.io
+  resources:
+  - ocmkustomizations
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - transfer.phoban.io
+  resources:
+  - ocmkustomizations/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - transfer.phoban.io
+  resources:
+  - ocmkustomizations/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - transfer.phoban.io
+  resources:
+  - realizations
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - transfer.phoban.io
+  resources:
+  - realizations/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - transfer.phoban.io
+  resources:
+  - realizations/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - transfer.phoban.io
+  resources:
+  - resources
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - transfer.phoban.io
+  resources:
+  - resources/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - transfer.phoban.io
+  resources:
+  - resources/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - transfer.phoban.io
+  resources:
+  - transformationlocalstorages
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - transfer.phoban.io
+  resources:
+  - transformationlocalstorages/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - transfer.phoban.io
+  resources:
+  - transformationlocalstorages/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - transfer.phoban.io
+  resources:
+  - transformations
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - transfer.phoban.io
+  resources:
+  - transformations/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - transfer.phoban.io
+  resources:
+  - transformations/status
+  verbs:
+  - get
+  - patch
+  - update

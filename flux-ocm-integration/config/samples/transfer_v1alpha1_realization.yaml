@@ -1,0 +1,6 @@
+apiVersion: transfer.phoban.io/v1alpha1
+kind: Realization
+metadata:
+  name: realization-sample
+spec:
+  # TODO(user): Add fields here

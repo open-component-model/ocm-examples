@@ -1,0 +1,11 @@
+apiVersion: transfer.phoban.io/v1alpha1
+kind: Resource
+metadata:
+  name: my-resource
+  namespace: ocm-flux-system
+spec:
+  interval: 10m
+  name: app-config
+  componentRef:
+    name: my-component
+    namespace: ocm-flux-system

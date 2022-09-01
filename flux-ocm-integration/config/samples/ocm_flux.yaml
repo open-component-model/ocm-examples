@@ -1,0 +1,27 @@
+apiVersion: source.toolkit.fluxcd.io/v1beta2
+kind: OCIRepository
+metadata:
+  name: ocm-demo
+  namespace: ocm-flux-system
+spec:
+  interval: 10m0s
+  provider: generic
+  ref:
+    tag: 1.0.0
+  url: oci://ghcr.io/phoban01/manifests
+  secretRef:
+    name: ghcr-cred
+---
+apiVersion: kustomize.toolkit.fluxcd.io/v1beta2
+kind: Kustomization
+metadata:
+  name: ocm-demo
+  namespace: ocm-flux-system
+spec:
+  interval: 1m0s
+  path: ./
+  prune: true
+  targetNamespace: ocm-flux-system
+  sourceRef:
+    kind: OCIRepository
+    name: ocm-demo

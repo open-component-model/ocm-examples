@@ -1,0 +1,11 @@
+apiVersion: transfer.phoban.io/v1alpha1
+kind: Realization
+metadata:
+  name: my-realizer
+  namespace: ocm-flux-system
+spec:
+  interval: 10m
+  resource: deploy
+  componentRef:
+    name: my-component
+    namespace: ocm-flux-system

@@ -1,0 +1,11 @@
+apiVersion: transfer.phoban.io/v1alpha1
+kind: Transformation
+metadata:
+  name: transformation-sample
+spec:
+  resourceRef:
+    name: resource-sample
+  transformStorageRef:
+    name: my-storage
+  transform:
+    operation: copy

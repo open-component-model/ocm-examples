@@ -1,0 +1,13 @@
+apiVersion: transfer.phoban.io/v1alpha1
+kind: Component
+metadata:
+  name: my-component
+  namespace: ocm-flux-system
+spec:
+  interval: 10m
+  name: github.com/phoban01/flux-demo
+  version: v1.0.0
+  repository:
+    url: ghcr.io/phoban01
+    secretRef:
+      name: oci-creds

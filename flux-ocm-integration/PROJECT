@@ -1,0 +1,78 @@
+domain: phoban.io
+layout:
+- go.kubebuilder.io/v3
+projectName: ocm-flux
+repo: github.com/phoban01/ocm-flux
+resources:
+- api:
+    crdVersion: v1
+    namespaced: true
+  controller: true
+  domain: phoban.io
+  group: transfer
+  kind: ComponentSync
+  path: github.com/phoban01/ocm-flux/api/v1alpha1
+  version: v1alpha1
+- api:
+    crdVersion: v1
+    namespaced: true
+  domain: phoban.io
+  group: transfer
+  kind: RepositoryCredentials
+  path: github.com/phoban01/ocm-flux/api/v1alpha1
+  version: v1alpha1
+- api:
+    crdVersion: v1
+    namespaced: true
+  controller: true
+  domain: phoban.io
+  group: transfer
+  kind: Component
+  path: github.com/phoban01/ocm-flux/api/v1alpha1
+  version: v1alpha1
+- api:
+    crdVersion: v1
+    namespaced: true
+  controller: true
+  domain: phoban.io
+  group: transfer
+  kind: Resource
+  path: github.com/phoban01/ocm-flux/api/v1alpha1
+  version: v1alpha1
+- api:
+    crdVersion: v1
+    namespaced: true
+  controller: true
+  domain: phoban.io
+  group: transfer
+  kind: Transformation
+  path: github.com/phoban01/ocm-flux/api/v1alpha1
+  version: v1alpha1
+- api:
+    crdVersion: v1
+    namespaced: true
+  controller: true
+  domain: phoban.io
+  group: transfer
+  kind: TransformationLocalStorage
+  path: github.com/phoban01/ocm-flux/api/v1alpha1
+  version: v1alpha1
+- api:
+    crdVersion: v1
+    namespaced: true
+  controller: true
+  domain: phoban.io
+  group: transfer
+  kind: OCMKustomization
+  path: github.com/phoban01/ocm-flux/api/v1alpha1
+  version: v1alpha1
+- api:
+    crdVersion: v1
+    namespaced: true
+  controller: true
+  domain: phoban.io
+  group: transfer
+  kind: Realization
+  path: github.com/phoban01/ocm-flux/api/v1alpha1
+  version: v1alpha1
+version: "3"

@@ -1,0 +1,12 @@
+apiVersion: transfer.phoban.io/v1alpha1
+kind: OCMKustomization
+metadata:
+  name: resource-config
+spec:
+  sourceRef:
+    kind: Realization
+    name: my-component
+  kustomizeTemplate:
+    interval: 10m
+    path: "."
+    prune: true
