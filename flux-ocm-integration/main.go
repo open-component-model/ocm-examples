@@ -101,29 +101,6 @@ func main() {
 		os.Exit(1)
 	}
 
-	fmt.Println(minioServerURL)
-
-	if err = (&controllers.ResourceReconciler{
-		Client: mgr.GetClient(),
-		Scheme: mgr.GetScheme(),
-	}).SetupWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "Resource")
-		os.Exit(1)
-	}
-	if err = (&controllers.TransformationReconciler{
-		Client: mgr.GetClient(),
-		Scheme: mgr.GetScheme(),
-	}).SetupWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "Transformation")
-		os.Exit(1)
-	}
-	if err = (&controllers.OCMKustomizationReconciler{
-		Client: mgr.GetClient(),
-		Scheme: mgr.GetScheme(),
-	}).SetupWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "OCMKustomization")
-		os.Exit(1)
-	}
 	if err = (&controllers.RealizationReconciler{
 		Client:   mgr.GetClient(),
 		Scheme:   mgr.GetScheme(),

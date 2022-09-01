@@ -38,6 +38,17 @@ type ComponentSpec struct {
 
 	// +optional
 	CredentialsChain RepositoryCredentials `json:"credentialsChain,omitempty"`
+
+	// +optional
+	Verify Verification `json:"verify,omitempty"`
+}
+
+type Verification struct {
+	// +required
+	Signature string `json:"signature,omitempty"`
+
+	// +required
+	PublicKey *meta.LocalObjectReference `json:"publicKey,omitempty"`
 }
 
 type Repository struct {
@@ -56,6 +67,28 @@ type ComponentStatus struct {
 
 	// +optional
 	Bucket string `json:"bucket,omitempty"`
+
+	// +optional
+	LatestComponentVersion string `json:"latestComponentVersion,omitempty"`
+
+	// +optional
+	Digest string `json:"digest,omitempty"`
+
+	// +optional
+	IsVerified bool `json:"isVerified"`
+
+	// +optional
+	FailedVerificationReason string `json:"failedVerificationReason,omitempty"`
+}
+
+// ShouldVerify checks whether a component should be verified or not
+func (c *Component) ShouldVerify() bool {
+	return c.Spec.Verify.Signature != "" && c.Spec.Verify.PublicKey.Name != ""
+}
+
+// IsVerified returns whether a component is verified or not
+func (c *Component) IsVerified() bool {
+	return c.Status.IsVerified
 }
 
 //+kubebuilder:object:root=true

@@ -1,7 +1,7 @@
 apiVersion: transfer.phoban.io/v1alpha1
 kind: Component
 metadata:
-  name: my-component
+  name: podinfo-component
   namespace: ocm-flux-system
 spec:
   interval: 10m
@@ -11,3 +11,7 @@ spec:
     url: ghcr.io/phoban01
     secretRef:
       name: oci-creds
+  verify:
+    signature: phoban01
+    publicKey:
+      name: signing-secret

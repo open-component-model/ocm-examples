@@ -189,6 +189,21 @@ spec:
                 - secretRef
                 - url
                 type: object
+              verify:
+                properties:
+                  publicKey:
+                    description: LocalObjectReference contains enough information
+                      to locate the referenced Kubernetes resource object.
+                    properties:
+                      name:
+                        description: Name of the referent.
+                        type: string
+                    required:
+                    - name
+                    type: object
+                  signature:
+                    type: string
+                type: object
               version:
                 type: string
             type: object
@@ -265,6 +280,14 @@ spec:
                   - type
                   type: object
                 type: array
+              digest:
+                type: string
+              failedVerificationReason:
+                type: string
+              isVerified:
+                type: boolean
+              latestComponentVersion:
+                type: string
               observedGeneration:
                 description: ObservedGeneration is the last reconciled generation.
                 format: int64

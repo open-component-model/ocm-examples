@@ -39,6 +39,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	ctrlutil "sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+	"sigs.k8s.io/controller-runtime/pkg/handler"
 
 	"github.com/containers/image/v5/pkg/compression"
 	"github.com/mandelsoft/spiff/spiffing"
@@ -58,6 +59,7 @@ import (
 	"github.com/open-component-model/ocm/pkg/spiff"
 	"github.com/open-component-model/ocm/pkg/utils"
 	transferv1alpha1 "github.com/phoban01/ocm-flux/api/v1alpha1"
+	"sigs.k8s.io/controller-runtime/pkg/source"
 )
 
 type Package struct {
@@ -92,6 +94,18 @@ type RealizationReconciler struct {
 //+kubebuilder:rbac:groups=transfer.phoban.io,resources=components,verbs=get;list;watch
 //+kubebuilder:rbac:groups="",resources=secrets,verbs=get;list;watch;create;update;patch;delete
 
+//+kubebuilder:rbac:groups=kustomize.toolkit.fluxcd.io,resources=kustomizations,verbs=get;list;watch;create;update;patch;delete
+
+// SetupWithManager sets up the controller with the Manager.
+func (r *RealizationReconciler) SetupWithManager(mgr ctrl.Manager) error {
+	return ctrl.NewControllerManagedBy(mgr).
+		For(&transferv1alpha1.Realization{}).
+		Watches(
+			&source.Kind{Type: &transferv1alpha1.Component{}},
+			&handler.EnqueueRequestForObject{}).
+		Complete(r)
+}
+
 func (r *RealizationReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	log := ctrl.LoggerFrom(ctx)
 
@@ -111,6 +125,12 @@ func (r *RealizationReconciler) Reconcile(ctx context.Context, req ctrl.Request)
 
 	if component.Status.Bucket == "" {
 		log.Info("bucket status is empty")
+		return ctrl.Result{RequeueAfter: time.Minute}, nil
+
+	}
+
+	if component.ShouldVerify() && component.IsVerified() != true {
+		log.Info("component is not verified")
 		return ctrl.Result{RequeueAfter: time.Minute}, nil
 
 	}
@@ -169,18 +189,13 @@ func (r *RealizationReconciler) reconcile(ctx context.Context, obj transferv1alp
 	}
 
 	// transfer
-	if err := r.transferToObjectStorage(ctx, "localhost:9000", component.Status.Bucket, fs); err != nil {
+	if err := r.transferToObjectStorage(ctx, r.MinioURL, component.Status.Bucket, fs); err != nil {
 		return obj, err
 	}
 
-	return obj, nil
-}
+	obj.Status.ObservedGeneration = obj.ObjectMeta.Generation
 
-// SetupWithManager sets up the controller with the Manager.
-func (r *RealizationReconciler) SetupWithManager(mgr ctrl.Manager) error {
-	return ctrl.NewControllerManagedBy(mgr).
-		For(&transferv1alpha1.Realization{}).
-		Complete(r)
+	return obj, nil
 }
 
 func (r *RealizationReconciler) patchStatus(ctx context.Context, req ctrl.Request, newStatus transferv1alpha1.RealizationStatus) error {

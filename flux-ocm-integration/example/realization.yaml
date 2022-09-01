@@ -1,16 +1,16 @@
 apiVersion: transfer.phoban.io/v1alpha1
 kind: Realization
 metadata:
-  name: my-realizer
+  name: podinfo
   namespace: ocm-flux-system
 spec:
   interval: 10m
   componentRef:
-    name: my-component
+    name: podinfo-component
     namespace: ocm-flux-system
   packageResource:
     name: deploy
   config:
-    namespace: default
+    namespace: customer-ns-1
     color: "#34eb8c"
     message: "Welcome to OCM"
