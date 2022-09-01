@@ -206,10 +206,10 @@ func (r *RealizationReconciler) reconcile(ctx context.Context, obj transferv1alp
 	// write transformed resources to local storage
 	bucketName := component.Status.Bucket
 	// endpoint := fmt.Sprintf("%s.%s:9000", obj.Spec.TransformStorageRef.Name, namespace)
-	endpoint := "localhost:9000"
+	// endpoint := "localhost:9000"
 
 	// Initialize minio client object.
-	mc, err := minio.New(endpoint, &minio.Options{
+	mc, err := minio.New(r.MinioURL, &minio.Options{
 		Creds:  miniocredentials.NewStaticV4("minioadmin", "minioadmin", ""),
 		Secure: false,
 	})

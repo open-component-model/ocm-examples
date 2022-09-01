@@ -8,6 +8,7 @@ rules:
   - ""
   resources:
   - configmaps
+  - services
   verbs:
   - get
   - list
@@ -35,3 +36,15 @@ rules:
   verbs:
   - create
   - patch
+- apiGroups:
+  - apps
+  resources:
+  - deployments
+  verbs:
+  - get
+  - list
+  - watch
+  - create
+  - update
+  - patch
+  - delete

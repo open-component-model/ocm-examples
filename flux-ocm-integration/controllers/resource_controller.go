@@ -17,10 +17,13 @@ limitations under the License.
 package controllers
 
 import (
+	"archive/tar"
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"os"
+	"path/filepath"
 
 	sourcev1beta2 "github.com/fluxcd/source-controller/api/v1beta2"
 	"github.com/google/go-containerregistry/pkg/authn/k8schain"
@@ -36,6 +39,31 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	ctrlutil "sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
+
+type ComponentDescriptor struct {
+	Component Component `yaml:"component"`
+}
+
+type Component struct {
+	Name      string     `yaml:"name"`
+	Version   string     `yaml:"version"`
+	Provider  string     `yaml:"provider"`
+	Resources []Resource `yaml:"resources"`
+}
+
+type Resource struct {
+	Access   ResourceAccess `yaml:"access"`
+	Name     string         `yaml:"name"`
+	Relation string         `yaml:"relation"`
+	Type     string         `yaml:"type"`
+	Version  string         `yaml:"version"`
+}
+
+type ResourceAccess struct {
+	LocalReference string `yaml:"localReference"`
+	MediaType      string `yaml:"mediaType"`
+	Type           string `yaml:"type"`
+}
 
 // ResourceReconciler reconciles a Resource object
 type ResourceReconciler struct {
@@ -224,4 +252,64 @@ func (r *ResourceReconciler) fetchResourceMediaType(ctx context.Context, obj tra
 	}
 
 	return mediaType, nil
+}
+
+// Untar takes a destination path and a reader; a tar reader loops over the tarfile
+// creating the file structure at 'dst' along the way, and writing any files
+func myuntar(dst string, r io.Reader) error {
+	tr := tar.NewReader(r)
+
+	for {
+		header, err := tr.Next()
+
+		switch {
+
+		// if no more files are found return
+		case err == io.EOF:
+			return nil
+
+		// return any other error
+		case err != nil:
+			return err
+
+		// if the header is nil, just skip it (not sure how this happens)
+		case header == nil:
+			continue
+		}
+
+		// the target location where the dir/file should be created
+		target := filepath.Join(dst, header.Name)
+
+		// the following switch could also be done using fi.Mode(), not sure if there
+		// a benefit of using one vs. the other.
+		// fi := header.FileInfo()
+
+		// check the file type
+		switch header.Typeflag {
+
+		// if its a dir and it doesn't exist create it
+		case tar.TypeDir:
+			if _, err := os.Stat(target); err != nil {
+				if err := os.MkdirAll(target, 0755); err != nil {
+					return err
+				}
+			}
+
+		// if it's a file create it
+		case tar.TypeReg:
+			f, err := os.Create(target)
+			if err != nil {
+				return err
+			}
+
+			// copy over contents
+			if _, err := io.Copy(f, tr); err != nil {
+				return err
+			}
+
+			// manually close here after each file operation; defering would cause each file close
+			// to wait until all operations have completed.
+			f.Close()
+		}
+	}
 }

@@ -77,10 +77,10 @@ func (r *ComponentReconciler) reconcile(ctx context.Context, obj transferv1alpha
 
 	bucketName := fmt.Sprintf("%s.%s.fluxcd.io", name, namespace)
 	// TODO: endpoint should be take from r
-	endpoint := "localhost:9000"
+	// endpoint := "localhost:9000"
 
 	// Initialize minio client object.
-	mc, err := minio.New(endpoint, &minio.Options{
+	mc, err := minio.New(r.MinioURL, &minio.Options{
 		Creds:  miniocredentials.NewStaticV4("minioadmin", "minioadmin", ""),
 		Secure: false,
 	})
