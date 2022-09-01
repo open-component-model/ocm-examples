@@ -32,6 +32,18 @@ rules:
 - apiGroups:
   - source.toolkit.fluxcd.io
   resources:
+  - buckets
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - source.toolkit.fluxcd.io
+  resources:
   - ocirepositories
   verbs:
   - create

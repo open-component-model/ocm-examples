@@ -27,6 +27,7 @@ import (
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 
 	apierrs "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
@@ -91,8 +92,10 @@ func main() {
 		setupLog.Error(err, "unable to start manager")
 		os.Exit(1)
 	}
+
 	ctx := ctrl.SetupSignalHandler()
-	minioServerURL, err := makeMinioServer(ctx, mgr.GetClient(), "ocm-flux-system", "minio")
+
+	minioServerURL, err := makeMinioServer(ctx, mgr.GetClient(), "ocm-flux-system", "minio", "250Mi")
 	if err != nil {
 		setupLog.Error(err, "unable to start minio")
 		os.Exit(1)
@@ -155,7 +158,11 @@ func main() {
 	}
 }
 
-func makeMinioServer(ctx context.Context, kubeClient client.Client, namespace, name string) (string, error) {
+func makeMinioServer(ctx context.Context, kubeClient client.Client, namespace, name, capacity string) (string, error) {
+	diskSize, err := resource.ParseQuantity(capacity)
+	if err != nil {
+		return "", err
+	}
 	deployment := &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
@@ -205,6 +212,12 @@ func makeMinioServer(ctx context.Context, kubeClient client.Client, namespace, n
 					Volumes: []corev1.Volume{
 						{
 							Name: "workdir",
+							VolumeSource: corev1.VolumeSource{
+								EmptyDir: &corev1.EmptyDirVolumeSource{
+									Medium:    "",
+									SizeLimit: &diskSize,
+								},
+							},
 						},
 					},
 				},

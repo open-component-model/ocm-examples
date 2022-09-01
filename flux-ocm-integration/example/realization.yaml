@@ -5,7 +5,12 @@ metadata:
   namespace: ocm-flux-system
 spec:
   interval: 10m
-  resource: deploy
   componentRef:
     name: my-component
     namespace: ocm-flux-system
+  packageResource:
+    name: deploy
+  config:
+    namespace: default
+    color: "#34eb8c"
+    message: "Welcome to OCM"

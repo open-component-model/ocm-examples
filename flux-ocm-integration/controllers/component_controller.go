@@ -47,6 +47,7 @@ type ComponentReconciler struct {
 //+kubebuilder:rbac:groups=transfer.phoban.io,resources=components/finalizers,verbs=update
 
 //+kubebuilder:rbac:groups=source.toolkit.fluxcd.io,resources=buckets,verbs=get;list;watch;create;update;patch;delete
+
 func (r *ComponentReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	log := ctrl.LoggerFrom(ctx)
 
@@ -77,10 +78,10 @@ func (r *ComponentReconciler) reconcile(ctx context.Context, obj transferv1alpha
 
 	bucketName := fmt.Sprintf("%s.%s.fluxcd.io", name, namespace)
 	// TODO: endpoint should be take from r
-	// endpoint := "localhost:9000"
+	endpoint := "localhost:9000"
 
 	// Initialize minio client object.
-	mc, err := minio.New(r.MinioURL, &minio.Options{
+	mc, err := minio.New(endpoint, &minio.Options{
 		Creds:  miniocredentials.NewStaticV4("minioadmin", "minioadmin", ""),
 		Secure: false,
 	})

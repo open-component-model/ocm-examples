@@ -52,11 +52,21 @@ spec:
               config:
                 additionalProperties:
                   type: string
+                description: 'TODO: this needs to use unstructed yaml type (look at
+                  tf controller)'
                 type: object
               interval:
                 type: string
-              resource:
-                type: string
+              packageResource:
+                description: LocalObjectReference contains enough information to locate
+                  the referenced Kubernetes resource object.
+                properties:
+                  name:
+                    description: Name of the referent.
+                    type: string
+                required:
+                - name
+                type: object
             type: object
           status:
             description: RealizationStatus defines the observed state of Realization

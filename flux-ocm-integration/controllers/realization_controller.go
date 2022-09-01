@@ -19,6 +19,7 @@ package controllers
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io/fs"
@@ -27,15 +28,20 @@ import (
 	"path/filepath"
 	"time"
 
+	kustomizev1beta2 "github.com/fluxcd/kustomize-controller/api/v1beta2"
 	"github.com/minio/minio-go/v7"
 	ocmruntime "github.com/open-component-model/ocm/pkg/runtime"
 	corev1 "k8s.io/api/core/v1"
+	apierrs "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	ctrlutil "sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	"github.com/containers/image/v5/pkg/compression"
+	"github.com/mandelsoft/spiff/spiffing"
 	"github.com/mandelsoft/vfs/pkg/osfs"
 	"github.com/mandelsoft/vfs/pkg/vfs"
 	miniocredentials "github.com/minio/minio-go/v7/pkg/credentials"
@@ -49,26 +55,27 @@ import (
 	"github.com/open-component-model/ocm/pkg/contexts/ocm/repositories/genericocireg"
 	ocmutils "github.com/open-component-model/ocm/pkg/contexts/ocm/utils"
 	"github.com/open-component-model/ocm/pkg/contexts/ocm/utils/localize"
+	"github.com/open-component-model/ocm/pkg/spiff"
 	"github.com/open-component-model/ocm/pkg/utils"
 	transferv1alpha1 "github.com/phoban01/ocm-flux/api/v1alpha1"
-	"github.com/phoban01/ocm-flux/internal/substitutions"
 )
 
 type Package struct {
-	TemplateResource  template                `json:"templateResource"`
-	ConfigRules       []configRule            `json:"configRules"`
-	ConfigScheme      map[string]interface{}  `json:"configScheme"`
-	LocalizationRules []localize.Localization `json:"localizationRules"`
+	TemplateResource  template                 `json:"templateResource"`
+	FluxTemplate      fluxTemplate             `json:"fluxTemplate"`
+	ConfigRules       []localize.Configuration `json:"configRules"`
+	ConfigScheme      map[string]interface{}   `json:"configScheme"`
+	ConfigTemplate    map[string]interface{}   `json:"configTemplate"`
+	LocalizationRules []localize.Localization  `json:"localizationRules"`
 }
 
 type template struct {
 	Name string `json:"name"`
 }
 
-type configRule struct {
-	Value string `json:"value"`
-	File  string `json:"file"`
-	Path  string `json:"path"`
+type fluxTemplate struct {
+	Kind string      `json:"kind"`
+	Spec interface{} `json:"spec"`
 }
 
 // RealizationReconciler reconciles a Realization object
@@ -127,125 +134,43 @@ func (r *RealizationReconciler) reconcile(ctx context.Context, obj transferv1alp
 
 	ocmCtx := ocm.ForContext(ctx)
 
-	// create the consumer id for credentials
-	consumerID, err := getConsumerIdentityForRepository(component.Spec.Repository)
+	// configure credentials
+	if err := r.configureCredentials(ctx, ocmCtx, component); err != nil {
+		return obj, err
+	}
+
+	// get component version
+	cv, err := r.getComponentVersion(ocmCtx, session, component)
 	if err != nil {
 		return obj, err
 	}
 
-	// fetch the credentials for the component storage
-	creds, err := r.getCredentialsForRepository(ctx, component.GetNamespace(), component.Spec.Repository)
+	// get the delivery package resource
+	pkg, err := r.getDeliveryPackage(ctx, obj, cv)
 	if err != nil {
 		return obj, err
 	}
 
-	// TODO: set credentials should return an error
-	ocmCtx.CredentialsContext().SetCredentialsForConsumer(consumerID, creds)
-
-	// configure the repository access
-	repoSpec := genericocireg.NewRepositorySpec(ocireg.NewRepositorySpec(component.Spec.Repository.URL), nil)
-	repo, err := session.LookupRepository(ocmCtx, repoSpec)
+	// configure virtual filesystem
+	fs, err := r.configureTemplateFilesystem(ctx, cv, pkg)
 	if err != nil {
-		return obj, fmt.Errorf("repo error: %w", err)
+		return obj, err
 	}
-
-	// get the component version
-	cv, err := session.LookupComponentVersion(repo, component.Spec.Name, component.Spec.Version)
-	if err != nil {
-		return obj, fmt.Errorf("component error: %w", err)
-	}
-
-	// get the resource
-	_, packageData, err := r.getResourceForComponentVersion(cv, obj.Spec.Resource)
-	if err != nil {
-		return obj, fmt.Errorf("resource error: %w", err)
-	}
-
-	// get the blob containing the delivery package
-	pkg := new(Package)
-	if err := ocmruntime.DefaultYAMLEncoding.Unmarshal(packageData.Bytes(), &pkg); err != nil {
-		return obj, fmt.Errorf("package unmarshal error: %w", err)
-	}
-
-	// get the template resource
-	_, templateBytes, err := r.getResourceForComponentVersion(cv, pkg.TemplateResource.Name)
-	if err != nil {
-		return obj, fmt.Errorf("template error: %w", err)
-	}
-
-	// setup virtual filesystem
-	virtualFS, err := osfs.NewTempFileSystem()
-	if err != nil {
-		return obj, fmt.Errorf("fs error: %w", err)
-	}
-	defer vfs.Cleanup(virtualFS)
-
-	// extract the template
-	if err := utils.ExtractTarToFs(virtualFS, templateBytes); err != nil {
-		return obj, fmt.Errorf("extract tar error: %w", err)
-	}
+	defer vfs.Cleanup(fs)
 
 	// perform localization
-	// generate subs
-	subst, err := localize.Localize(pkg.LocalizationRules, cv, nil)
-	if err != nil {
-		return obj, fmt.Errorf("localize error: %w", err)
-	}
-
-	// apply subs
-	if err := substitutions.Substitute(subst, virtualFS); err != nil {
-		return obj, fmt.Errorf("subst error: %w", err)
-	}
-
-	// TODO: merge config
-	// move storage setup to component
-	// when the controller starts it should create the minio pod
-	// then each component creates a bucket
-	//
-
-	// write transformed resources to local storage
-	bucketName := component.Status.Bucket
-	// endpoint := fmt.Sprintf("%s.%s:9000", obj.Spec.TransformStorageRef.Name, namespace)
-	// endpoint := "localhost:9000"
-
-	// Initialize minio client object.
-	mc, err := minio.New(r.MinioURL, &minio.Options{
-		Creds:  miniocredentials.NewStaticV4("minioadmin", "minioadmin", ""),
-		Secure: false,
-	})
-	if err != nil {
+	if err := r.applySubstitutionRules(ctx, obj, cv, pkg, fs); err != nil {
 		return obj, err
 	}
 
-	rootDir := "/"
-
-	fi, err := virtualFS.Stat(rootDir)
-	if err != nil {
+	// flux template
+	if err := r.generateFluxResource(ctx, obj, component, pkg); err != nil {
 		return obj, err
 	}
 
-	sourceDir := filepath.Join(os.TempDir(), fi.Name())
-
-	if err := vfs.Walk(virtualFS, rootDir, func(path string, fi fs.FileInfo, err error) error {
-		if m := fi.Mode(); !(m.IsRegular() || m.IsDir()) {
-			return nil
-		}
-
-		if fi.IsDir() {
-			return nil
-		}
-
-		abspath := filepath.Join(sourceDir, path)
-
-		opts := minio.PutObjectOptions{ContentType: "text/yaml"}
-
-		if _, err := mc.FPutObject(ctx, bucketName, path, abspath, opts); err != nil {
-			return err
-		}
-
-		return nil
-	}); err != nil {
-		return obj, fmt.Errorf("copy files error: %w", err)
+	// transfer
+	if err := r.transferToObjectStorage(ctx, "localhost:9000", component.Status.Bucket, fs); err != nil {
+		return obj, err
 	}
 
 	return obj, nil
@@ -309,10 +234,6 @@ func (r *RealizationReconciler) getCredentialsForRepository(ctx context.Context,
 	return credentials.NewCredentials(props), nil
 }
 
-func (r *RealizationReconciler) applyLocalization(ctx context.Context, pkg *Package) error {
-	return nil
-}
-
 func (r *RealizationReconciler) getResourceForComponentVersion(cv ocm.ComponentVersionAccess, resourceName string) (ocm.ResourceAccess, *bytes.Buffer, error) {
 	resource, err := cv.GetResource(ocmmeta.NewIdentity(resourceName))
 	if err != nil {
@@ -354,4 +275,199 @@ func (r *RealizationReconciler) getResourceReference(cv ocm.ComponentVersionAcce
 	}
 
 	return acc.(*ociartefact.AccessSpec).ImageReference, nil
+}
+
+func (r *RealizationReconciler) configureCredentials(ctx context.Context, ocmCtx ocm.Context, component transferv1alpha1.Component) error {
+	// create the consumer id for credentials
+	consumerID, err := getConsumerIdentityForRepository(component.Spec.Repository)
+	if err != nil {
+		return err
+	}
+
+	// fetch the credentials for the component storage
+	creds, err := r.getCredentialsForRepository(ctx, component.GetNamespace(), component.Spec.Repository)
+	if err != nil {
+		return err
+	}
+
+	// TODO: set credentials should return an error
+	ocmCtx.CredentialsContext().SetCredentialsForConsumer(consumerID, creds)
+
+	return nil
+}
+
+func (r *RealizationReconciler) getComponentVersion(ctx ocm.Context, session ocm.Session, component transferv1alpha1.Component) (ocm.ComponentVersionAccess, error) {
+	// configure the repository access
+	repoSpec := genericocireg.NewRepositorySpec(ocireg.NewRepositorySpec(component.Spec.Repository.URL), nil)
+	repo, err := session.LookupRepository(ctx, repoSpec)
+	if err != nil {
+		return nil, fmt.Errorf("repo error: %w", err)
+	}
+
+	// get the component version
+	cv, err := session.LookupComponentVersion(repo, component.Spec.Name, component.Spec.Version)
+	if err != nil {
+		return nil, fmt.Errorf("component error: %w", err)
+	}
+
+	return cv, nil
+}
+
+func (r *RealizationReconciler) getDeliveryPackage(ctx context.Context, obj transferv1alpha1.Realization, cv ocm.ComponentVersionAccess) (*Package, error) {
+	_, packageData, err := r.getResourceForComponentVersion(cv, obj.Spec.PackageResource.Name)
+	if err != nil {
+		return nil, fmt.Errorf("resource error: %w", err)
+	}
+
+	pkg := new(Package)
+	if err := ocmruntime.DefaultYAMLEncoding.Unmarshal(packageData.Bytes(), &pkg); err != nil {
+		return nil, fmt.Errorf("package unmarshal error: %w", err)
+	}
+
+	return pkg, nil
+}
+
+func (r *RealizationReconciler) configureTemplateFilesystem(ctx context.Context, cv ocm.ComponentVersionAccess, pkg *Package) (vfs.FileSystem, error) {
+	// get the template
+	_, templateBytes, err := r.getResourceForComponentVersion(cv, pkg.TemplateResource.Name)
+	if err != nil {
+		return nil, fmt.Errorf("template error: %w", err)
+	}
+
+	// setup virtual filesystem
+	virtualFS, err := osfs.NewTempFileSystem()
+	if err != nil {
+		return nil, fmt.Errorf("fs error: %w", err)
+	}
+
+	// extract the template
+	if err := utils.ExtractTarToFs(virtualFS, templateBytes); err != nil {
+		return nil, fmt.Errorf("extract tar error: %w", err)
+	}
+
+	return virtualFS, nil
+}
+
+func (r *RealizationReconciler) applySubstitutionRules(ctx context.Context, obj transferv1alpha1.Realization, cv ocm.ComponentVersionAccess, pkg *Package, fs vfs.FileSystem) error {
+	subst, err := localize.Localize(pkg.LocalizationRules, cv, nil)
+	if err != nil {
+		return fmt.Errorf("localize error: %w", err)
+	}
+
+	config, err := json.Marshal(obj.Spec.Config)
+	if err != nil {
+		return err
+	}
+
+	schemeData, err := json.Marshal(pkg.ConfigScheme)
+	if err != nil {
+		return err
+	}
+
+	templateData, err := json.Marshal(pkg.ConfigTemplate)
+	if err != nil {
+		return err
+	}
+
+	configSubst, err := localize.Configure(pkg.ConfigRules, subst, cv, nil, templateData, config, nil, schemeData)
+	if err != nil {
+		return fmt.Errorf("localize error: %w", err)
+	}
+
+	if err := localize.Substitute(configSubst, fs); err != nil {
+		return fmt.Errorf("subst error: %w", err)
+	}
+
+	return nil
+}
+
+func (r *RealizationReconciler) generateFluxResource(ctx context.Context, obj transferv1alpha1.Realization, component transferv1alpha1.Component, pkg *Package) error {
+	fluxSpecData, err := json.Marshal(pkg.FluxTemplate.Spec)
+	if err != nil {
+		return fmt.Errorf("flux marshal error: %w", err)
+	}
+
+	config, err := json.Marshal(obj.Spec.Config)
+	if err != nil {
+		return err
+	}
+
+	fluxSpecData, err = spiff.CascadeWith(spiff.TemplateData("adjustments", fluxSpecData), nil, spiff.Values(config), spiff.Mode(spiffing.MODE_PRIVATE))
+	if err != nil {
+		return fmt.Errorf("flux subst error: %w", err)
+	}
+
+	if pkg.FluxTemplate.Kind == "Kustomization" {
+		kspec := new(kustomizev1beta2.KustomizationSpec)
+		if err := ocmruntime.DefaultYAMLEncoding.Unmarshal(fluxSpecData, &kspec); err != nil {
+			return fmt.Errorf("flux unmarshal error: %w", err)
+		}
+
+		kspec.SourceRef = kustomizev1beta2.CrossNamespaceSourceReference{
+			Kind:      "Bucket",
+			Namespace: component.GetNamespace(),
+			Name:      component.GetName(),
+		}
+
+		kustomization := kustomizev1beta2.Kustomization{
+			ObjectMeta: metav1.ObjectMeta{
+				Namespace: obj.GetNamespace(),
+				Name:      obj.GetName(),
+			},
+			Spec: *kspec,
+		}
+
+		if err := ctrlutil.SetOwnerReference(&obj, &kustomization, r.Scheme); err != nil {
+			return fmt.Errorf("flux set owner error: %w", err)
+		}
+
+		if err := r.Create(ctx, &kustomization); err != nil && !apierrs.IsAlreadyExists(err) {
+			return fmt.Errorf("flux create error: %w", err)
+		}
+	}
+
+	return nil
+}
+
+func (r *RealizationReconciler) transferToObjectStorage(ctx context.Context, s3endpoint, bucketName string, virtualFs vfs.FileSystem) error {
+	mc, err := minio.New(s3endpoint, &minio.Options{
+		Creds:  miniocredentials.NewStaticV4("minioadmin", "minioadmin", ""),
+		Secure: false,
+	})
+	if err != nil {
+		return err
+	}
+
+	rootDir := "/"
+
+	fi, err := virtualFs.Stat(rootDir)
+	if err != nil {
+		return err
+	}
+
+	sourceDir := filepath.Join(os.TempDir(), fi.Name())
+
+	if err := vfs.Walk(virtualFs, rootDir, func(path string, fi fs.FileInfo, err error) error {
+		if m := fi.Mode(); !(m.IsRegular() || m.IsDir()) {
+			return nil
+		}
+
+		if fi.IsDir() {
+			return nil
+		}
+
+		abspath := filepath.Join(sourceDir, path)
+
+		opts := minio.PutObjectOptions{ContentType: "application/x-yaml"}
+
+		if _, err := mc.FPutObject(ctx, bucketName, path, abspath, opts); err != nil {
+			return err
+		}
+
+		return nil
+	}); err != nil {
+		return fmt.Errorf("transfer to object storage error: %w", err)
+	}
+
+	return nil
 }

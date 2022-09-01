@@ -30,10 +30,10 @@ type RealizationSpec struct {
 	ComponentRef *meta.NamespacedObjectReference `json:"componentRef,omitempty"`
 
 	// +required
-	Resource string `json:"resource,omitempty"`
+	PackageResource *meta.LocalObjectReference `json:"packageResource,omitempty"`
 
 	//TODO: this needs to use unstructed yaml type (look at tf controller)
-
+	// +optional
 	Config map[string]string `json:"config,omitempty"`
 }
 

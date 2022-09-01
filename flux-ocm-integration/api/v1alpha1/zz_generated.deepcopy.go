@@ -323,6 +323,11 @@ func (in *RealizationSpec) DeepCopyInto(out *RealizationSpec) {
 		*out = new(meta.NamespacedObjectReference)
 		**out = **in
 	}
+	if in.PackageResource != nil {
+		in, out := &in.PackageResource, &out.PackageResource
+		*out = new(meta.LocalObjectReference)
+		**out = **in
+	}
 	if in.Config != nil {
 		in, out := &in.Config, &out.Config
 		*out = make(map[string]string, len(*in))
