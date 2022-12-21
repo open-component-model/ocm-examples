@@ -1,0 +1,7 @@
+name: template
+type: pipeline.ocm.software
+input:
+  type: file
+  mediaType: application/yaml
+  path: ./template.yaml
+  compress: true

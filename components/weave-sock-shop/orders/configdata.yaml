@@ -1,0 +1,13 @@
+apiVersion: config.ocm.software/v1alpha1
+kind: ConfigData
+metadata:
+  name: orders-config
+localization:
+- resource:
+    name: app-image
+  file: orders-dep.yaml
+  image: spec.template.spec.containers[0].image
+- resource:
+    name: db-image
+  file: orders-db-dep.yaml
+  image: spec.template.spec.containers[0].image

@@ -1,0 +1,46 @@
+name: config
+type: configdata.ocm.software
+input:
+  type: file
+  mediaType: application/yaml
+  path: ./configdata.yaml
+  compress: true
+---
+name: app-image
+relation: external
+type: ociImage
+version: 0.3.1
+access:
+  type: ociArtefact
+  imageReference: docker.io/weaveworksdemos/queue-master:0.3.1
+---
+name: rabbitmq-management-image
+relation: external
+type: ociImage
+version: 3.6.8-management
+access:
+  type: ociArtefact
+  imageReference: docker.io/library/rabbitmq:3.6.8-management
+---
+name: rabbitmq-exporter-image
+relation: external
+type: ociImage
+version: 1.0.0-RC19
+access:
+  type: ociArtefact
+  imageReference: docker.io/kbudde/rabbitmq-exporter:1.0.0-RC19
+---
+name: session-image
+relation: external
+type: ociImage
+version: 7.0.5-alpine
+access:
+  type: ociArtefact
+  imageReference: docker.io/library/redis:7.0.5-alpine
+---
+name: manifests
+type: kustomize.ocm.fluxcd.io
+input:
+  type: dir
+  path: ./kubernetes
+  compress: true

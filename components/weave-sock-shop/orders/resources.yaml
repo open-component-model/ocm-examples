@@ -1,0 +1,30 @@
+name: config
+type: configdata.ocm.software
+input:
+  type: file
+  mediaType: application/yaml
+  path: ./configdata.yaml
+  compress: true
+---
+name: app-image
+relation: external
+type: ociImage
+version: 0.4.7
+access:
+  type: ociArtefact
+  imageReference: docker.io/weaveworksdemos/orders:0.4.7
+---
+name: db-image
+relation: external
+type: ociImage
+version: 6.0.2
+access:
+  type: ociArtefact
+  imageReference: docker.io/library/mongo:6.0.2
+---
+name: manifests
+type: kustomize.ocm.fluxcd.io
+input:
+  type: dir
+  path: ./kubernetes
+  compress: true
