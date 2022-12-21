@@ -1,7 +1,0 @@
-apiVersion: transfer.phoban.io/v1alpha1
-kind: TransformationLocalStorage
-metadata:
-  name: my-storage
-spec:
-  kind: S3
-  persistent: false
