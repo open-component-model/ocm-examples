@@ -1,0 +1,13 @@
+apiVersion: config.ocm.software/v1alpha1
+kind: ConfigData
+metadata:
+  name: carts-config
+localization:
+- resource:
+    name: app-image
+  file: carts-dep.yaml
+  image: spec.template.spec.containers[0].image
+- resource:
+    name: db-image
+  file: carts-db-dep.yaml
+  image: spec.template.spec.containers[0].image

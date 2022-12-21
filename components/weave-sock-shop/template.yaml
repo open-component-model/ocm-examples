@@ -1,0 +1,100 @@
+apiVersion: config.ocm.software/v1alpha1
+kind: PipelineTemplate
+metadata:
+  name: pipeline-template
+steps:
+- name: resource
+  template:
+    apiVersion: delivery.ocm.software/v1alpha1
+    kind: Resource
+    metadata:
+      name: {{ .Parameters.Name }}
+      namespace: {{ .Component.Namespace }}
+    spec:
+      interval: 10m0s
+      componentVersionRef:
+        name: {{ .Component.Name }}
+        namespace: {{ .Component.Namespace }}
+      resource:
+        name: {{ .Resource }}
+        referencePath:
+          name: {{ .Component.Reference }}
+      snapshotTemplate:
+        name: {{ .Parameters.Name }}
+        tag: latest
+- name: localize
+  template:
+    apiVersion: delivery.ocm.software/v1alpha1
+    kind: Localization
+    metadata:
+      name: {{ .Parameters.Name }}
+      namespace: {{ .Component.Namespace }}
+    spec:
+      interval: 10m
+      sourceRef:
+        kind: Snapshot
+        name: {{ .Parameters.Name }}
+        namespace: {{ .Component.Namespace }}
+      configRef:
+        componentRef:
+          name: {{ .Component.Name }}
+          namespace: {{ .Component.Namespace }}
+        resource:
+          name: config
+          referencePath:
+            name: {{ .Component.Reference }}
+      snapshotTemplate:
+        name: {{ .Parameters.Name }}-localized
+        tag: latest
+- name: config
+  template:
+    apiVersion: delivery.ocm.software/v1alpha1
+    kind: Configuration
+    metadata:
+      name: {{ .Parameters.Name }}
+      namespace: {{ .Component.Namespace }}
+    spec:
+      interval: 10m
+      sourceRef:
+        kind: Snapshot
+        name: {{ .Parameters.Name }}-localized
+        namespace: {{ .Component.Namespace }}
+      configRef:
+        componentRef:
+          name: {{ .Component.Name }}
+          namespace: {{ .Component.Namespace }}
+        resource:
+          name: config
+          referencePath:
+            name: {{ .Component.Reference }}
+      values: {{ .Values | toYaml | nindent 8 }}
+      snapshotTemplate:
+        name: {{ .Parameters.Name }}-configured
+        tag: latest
+- name: flux-source
+  template:
+    apiVersion: source.toolkit.fluxcd.io/v1beta2
+    kind: OCIRepository
+    metadata:
+      name: {{ .Parameters.Name }}
+      namespace: {{ .Component.Namespace }}
+    spec:
+      interval: 10m0s
+      url: oci://{{ .Registry }}/{{ .Parameters.Name }}-configured
+      insecure: true
+      ref:
+        tag: latest
+- name: flux-kustomization
+  template:
+    apiVersion: kustomize.toolkit.fluxcd.io/v1beta2
+    kind: Kustomization
+    metadata:
+      name: {{ .Parameters.Name }}
+      namespace: {{ .Component.Namespace }}
+    spec:
+      interval: 10m0s
+      prune: true
+      sourceRef:
+        kind: OCIRepository
+        name: {{ .Parameters.Name }}
+      path: ./

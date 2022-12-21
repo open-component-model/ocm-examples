@@ -1,0 +1,45 @@
+name: Build and push components to ghcr.io
+on:
+  push:
+    tags: [ "v*.*.*" ]
+  workflow_dispatch:
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  build-and-push:
+    runs-on: "ubuntu-latest"
+
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - uses: actions/checkout@v3
+      - name: Log in to the Container registry
+        uses: docker/login-action@v2
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Setup Golang
+        uses: actions/setup-go@v3
+        with:
+          go-version: '1.18.4'
+      - name: Clone
+        uses: actions/checkout@v3
+        with:
+          repository: open-component-model/ocm
+          path: ocm
+      - name: Install OCM
+        run: |
+          cd ocm
+          make install
+          cd ..
+          rm -rf ocm
+      - name: Build and push components
+        run: |
+          echo $RSA_PRIV | base64 -d > /tmp/id_rsa
+          KEY=/tmp/id_rsa make all
