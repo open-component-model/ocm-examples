@@ -33,20 +33,22 @@ steps:
       namespace: {{ .Component.Namespace }}
     spec:
       interval: 1m0s
-      sourceRef:
-        kind: Snapshot
-        name: {{ .Parameters.Name }}
+      componentVersionRef:
+        name: {{ .Component.Name }}
         namespace: {{ .Component.Namespace }}
-      configRef:
-        componentVersionRef:
-          name: {{ .Component.Name }}
+      source:
+        sourceRef:
+          kind: Snapshot
+          name: {{ .Parameters.Name }}
           namespace: {{ .Component.Namespace }}
+      configRef:
         resource:
-          name: config
-          {{ with .Component.Reference  }}
-          referencePath:
-            name: {{ . }}
-          {{ end }}
+          resourceRef:
+            name: config
+            {{ with .Component.Reference  }}
+            referencePath:
+              - name: {{ . }}
+            {{ end }}
       snapshotTemplate:
         name: {{ .Parameters.Name }}-localized
         tag: latest
@@ -59,20 +61,22 @@ steps:
       namespace: {{ .Component.Namespace }}
     spec:
       interval: 1m0s
-      sourceRef:
-        kind: Snapshot
-        name: {{ .Parameters.Name }}-localized
+      componentVersionRef:
+        name: {{ .Component.Name }}
         namespace: {{ .Component.Namespace }}
-      configRef:
-        componentVersionRef:
-          name: {{ .Component.Name }}
+      source:
+        sourceRef:
+          kind: Snapshot
+          name: {{ .Parameters.Name }}-localized
           namespace: {{ .Component.Namespace }}
+      configRef:
         resource:
-          name: config
-          {{ with .Component.Reference  }}
-          referencePath:
-            name: {{ . }}
-          {{ end }}
+          resourceRef:
+            name: config
+            {{ with .Component.Reference  }}
+            referencePath:
+              - name: {{ . }}
+            {{ end }}
       values: {{ .Values | toYaml | nindent 8 }}
       snapshotTemplate:
         name: {{ .Parameters.Name }}-configured
