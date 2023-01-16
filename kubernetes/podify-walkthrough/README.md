@@ -26,7 +26,7 @@ We'll be building a microservices application composed of frontend, backend and 
 
 ### Building the component
 
-The component we'll use is available under the `./components` directory. We won't go into the details of component authoring in this guide, but please consult out website for detailed guides on the component authoring process.
+The component we'll use is available under the `./components` directory. We won't go into the details of component authoring in this guide, but please consult our website for detailed guides on the component authoring process.
 
 The makefile allows you to easily build, push and sign the component:
 
@@ -36,7 +36,7 @@ make all OCI_REPO=ghcr.io/${GITHUB_USER}
 
 ### Preparing a cluster
 
-First we create a kind cluster:
+First, we create a kind cluster:
 
 ```shell
 $ kind create cluster
@@ -56,7 +56,7 @@ kubectl cluster-info --context kind-kind
 Thanks for using kind! 😊
 ```
 
-The controller requires a few secrets in order to retrieve components from our OCI registry, let's set those up first (please update the arguments with the appropriate values for your GitHub user):
+The controller requires a few secrets to retrieve components from our OCI registry, let's set those up first (please update the arguments with the appropriate values for your GitHub user):
 
 ```shell
 ./scripts/setup-secrets.sh ${GITHUB_USER} ${GITHUB_TOKEN} ${GITHUB_USER_EMAIL}
@@ -115,7 +115,7 @@ spec:
         name: publickey
 ```
 
-The custom resource defined in `./apps/podify/diffusion.yaml` is responsible for unpacking the resources reference in the Component version and applying them to the cluster:
+The custom resource defined in `./apps/podify/diffusion.yaml` is responsible for unpacking the resources references in the Component version and applying them to the cluster:
 
 ```yaml
 # ./apps/podify/diffusion.yaml
@@ -151,14 +151,14 @@ spec:
 
 ### Diffusion
 
-The Diffusion custom resource allows us to automate the process of extracting a resource from a component and executing localization or configuration. With many resources these tasks could be come laborious. To reduce the toil involved we provide a pipeline template in `spec.pipelineTemplateRef` which defines a set of Kuberenetes resources to be created for each item selected by the Diffusion's resource selector (`spec.resourceSelector`).
+The Diffusion custom resource allows us to automate the process of extracting a resource from a component and executing localization or configuration. With many resources, these tasks could become laborious. To reduce the toil involved we provide a pipeline template in `spec.pipelineTemplateRef` which defines a set of Kuberenetes resources to be created for each item selected by the Diffusion's resource selector (`spec.resourceSelector`).
 
-The pipeline template is a go-template which contains a resource, localization, configuration, Flux OCI Repository and a Flux Kustomization:
+The pipeline template is a go-template that contains a resource, localization, configuration, Flux OCI Repository and a Flux Kustomization:
 
 <details>
   <summary>Expand to view template...</summary>
 
-```go
+```yaml
 # ./templates/podify.yaml
 apiVersion: config.ocm.software/v1alpha1
 kind: PipelineTemplate
@@ -181,7 +181,7 @@ steps:
         name: {{ .Resource }}
         {{ with .Component.Reference  }}
         referencePath:
-          name: {{ . }}
+          - name: {{ . }}
         {{ end }}
       snapshotTemplate:
         name: {{ .Parameters.Name }}
@@ -195,19 +195,19 @@ steps:
       namespace: {{ .Component.Namespace }}
     spec:
       interval: 1m0s
+      componentVersionRef:
+        name: {{ .Component.Name }}
+        namespace: {{ .Component.Namespace }}
       sourceRef:
         kind: Snapshot
         name: {{ .Parameters.Name }}
         namespace: {{ .Component.Namespace }}
       configRef:
-        componentVersionRef:
-          name: {{ .Component.Name }}
-          namespace: {{ .Component.Namespace }}
         resource:
           name: config
           {{ with .Component.Reference  }}
           referencePath:
-            name: {{ . }}
+            - name: {{ . }}
           {{ end }}
       snapshotTemplate:
         name: {{ .Parameters.Name }}-localized
@@ -221,19 +221,19 @@ steps:
       namespace: {{ .Component.Namespace }}
     spec:
       interval: 1m0s
+      componentVersionRef:
+        name: {{ .Component.Name }}
+        namespace: {{ .Component.Namespace }}
       sourceRef:
         kind: Snapshot
         name: {{ .Parameters.Name }}-localized
         namespace: {{ .Component.Namespace }}
       configRef:
-        componentVersionRef:
-          name: {{ .Component.Name }}
-          namespace: {{ .Component.Namespace }}
         resource:
           name: config
           {{ with .Component.Reference  }}
           referencePath:
-            name: {{ . }}
+            - name: {{ . }}
           {{ end }}
       values: {{ .Values | toYaml | nindent 8 }}
       snapshotTemplate:
@@ -270,7 +270,7 @@ steps:
 ```
 </details>
 
-If you have followed our earlier tutorial on getting started with Flux and OCM, you will recognise the resources we have used here.
+If you have followed our earlier tutorial on getting started with Flux and OCM, you will recognize the resources we have used here.
 
 ### Deploy the component custom resources
 
@@ -285,7 +285,7 @@ flux create kustomization podify \
     --export > ./clusters/podify_kustomization.yaml
 ```
 
-Commit this change and push to the remote repository.
+Commit this change and push it to the remote repository.
 
 Once Flux has reconciled the Kustomization we should see the OCM resources in the cluster:
 
@@ -299,7 +299,7 @@ NAME                                     AGE
 diffusion.delivery.ocm.software/podify   83s
 ```
 
-Momentarily our Component will reconcile:
+Momentarily, our Components will reconcile:
 
 ```shell
 kubectl get deploy
