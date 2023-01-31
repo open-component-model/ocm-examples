@@ -1,5 +1,5 @@
 apiVersion: delivery.ocm.software/v1alpha1
-kind: Unpacker
+kind: Diffusion
 metadata:
   name: podify
   namespace: ocm-system

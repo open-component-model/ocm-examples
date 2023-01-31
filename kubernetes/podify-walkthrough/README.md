@@ -10,7 +10,7 @@ We recommend following our getting started guide as a pre-requisite to this walk
 - [Building the component](#building-the-component)
 - [Preparing a cluster](#preparing-a-cluster)
 - [Examining the application](#examining-the-application)
-- [Diffusion](#diffusion)
+- [Unpacker](#unpacker)
 
 ## Requirements
 
@@ -120,7 +120,7 @@ The custom resource defined in `./apps/podify/diffusion.yaml` is responsible for
 ```yaml
 # ./apps/podify/diffusion.yaml
 apiVersion: delivery.ocm.software/v1alpha1
-kind: Diffusion
+kind: Unpacker
 metadata:
   name: podify
   namespace: ocm-system
@@ -149,9 +149,9 @@ spec:
         color: "red"
 ```
 
-### Diffusion
+### Unpacker
 
-The Diffusion custom resource allows us to automate the process of extracting a resource from a component and executing localization or configuration. With many resources, these tasks could become laborious. To reduce the toil involved we provide a pipeline template in `spec.pipelineTemplateRef` which defines a set of Kuberenetes resources to be created for each item selected by the Diffusion's resource selector (`spec.resourceSelector`).
+The Unpacker custom resource allows us to automate the process of extracting a resource from a component and executing localization or configuration. With many resources, these tasks could become laborious. To reduce the toil involved we provide a pipeline template in `spec.pipelineTemplateRef` which defines a set of Kuberenetes resources to be created for each item selected by the Unpacker's resource selector (`spec.resourceSelector`).
 
 The pipeline template is a go-template that contains a resource, localization, configuration, Flux OCI Repository and a Flux Kustomization:
 
@@ -238,20 +238,7 @@ steps:
       values: {{ .Values | toYaml | nindent 8 }}
       snapshotTemplate:
         name: {{ .Parameters.Name }}-configured
-        tag: latest
-- name: flux-source
-  template:
-    apiVersion: source.toolkit.fluxcd.io/v1beta2
-    kind: OCIRepository
-    metadata:
-      name: {{ .Parameters.Name }}
-      namespace: {{ .Component.Namespace }}
-    spec:
-      interval: 1m0s
-      url: oci://{{ .Registry }}/snapshots/{{ .Parameters.Name }}-configured
-      insecure: true
-      ref:
-        tag: latest
+        createFluxSource: true
 - name: flux-kustomization
   template:
     apiVersion: kustomize.toolkit.fluxcd.io/v1beta2
@@ -265,7 +252,7 @@ steps:
       targetNamespace: default
       sourceRef:
         kind: OCIRepository
-        name: {{ .Parameters.Name }}
+        name: {{ .Parameters.Name }}-configured
       path: ./
 ```
 </details>
