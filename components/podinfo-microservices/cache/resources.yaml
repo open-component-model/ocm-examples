@@ -11,7 +11,7 @@ relation: external
 type: ociImage
 version: 6.2.0
 access:
-  type: ociArtefact
+  type: ociArtifact
   imageReference: redis:6.0.1
 ---
 name: manifests
