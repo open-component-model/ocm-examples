@@ -11,7 +11,7 @@ relation: external
 type: ociImage
 version: 6.2.0
 access:
-  type: ociArtefact
+  type: ociArtifact
   imageReference: ghcr.io/stefanprodan/podinfo:6.2.0
 ---
 name: manifests
