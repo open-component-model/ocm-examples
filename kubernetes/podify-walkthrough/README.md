@@ -72,7 +72,7 @@ Once flux is bootstrapped it will automatically deploy the OCM controllers, let'
 kubectl get deploy -n ocm-system
 
 NAME                   READY   UP-TO-DATE   AVAILABLE   AGE
-diffusion-controller   1/1     1            1           1m0s
+unpacker-controller   1/1     1            1           1m0s
 ocm-controller         1/1     1            1           1m3s
 ```
 
@@ -85,7 +85,7 @@ tree ./app/podify
 
 ./apps/podify
 ├── componentversion.yaml
-└── diffusion.yaml
+└── unpacker.yaml
 ```
 
 The custom resource defined in `./apps/podify/componentversion.yaml` is responsible for retrieving our Component from an OCM repository:
@@ -115,10 +115,10 @@ spec:
         name: publickey
 ```
 
-The custom resource defined in `./apps/podify/diffusion.yaml` is responsible for unpacking the resources references in the Component version and applying them to the cluster:
+The custom resource defined in `./apps/podify/unpacker.yaml` is responsible for unpacking the resources references in the Component version and applying them to the cluster:
 
 ```yaml
-# ./apps/podify/diffusion.yaml
+# ./apps/podify/unpacker.yaml
 apiVersion: delivery.ocm.software/v1alpha1
 kind: Unpacker
 metadata:
@@ -277,13 +277,13 @@ Commit this change and push it to the remote repository.
 Once Flux has reconciled the Kustomization we should see the OCM resources in the cluster:
 
 ```shell
-kubectl get componentversions, diffusions -n ocm-system
+kubectl get componentversions, unpacker -n ocm-system
 
 NAME                                            AGE
 componentversion.delivery.ocm.software/podify   83s
 
 NAME                                     AGE
-diffusion.delivery.ocm.software/podify   83s
+unpacker.delivery.ocm.software/podify   83s
 ```
 
 Momentarily, our Components will reconcile:
