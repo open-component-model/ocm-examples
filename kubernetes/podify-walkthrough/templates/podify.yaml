@@ -19,7 +19,7 @@ steps:
         name: {{ .Resource }}
         {{ with .Component.Reference  }}
         referencePath:
-          name: {{ . }}
+        - name: {{ . }}
         {{ end }}
       snapshotTemplate:
         name: {{ .Parameters.Name }}
