@@ -4,7 +4,6 @@ input:
   type: file
   mediaType: application/yaml
   path: ./configdata.yaml
-  compress: true
 ---
 name: image
 relation: external
@@ -19,4 +18,3 @@ type: Directory
 input:
   type: dir
   path: ./manifests
-  compress: false
