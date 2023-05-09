@@ -15,8 +15,8 @@ access:
   imageReference: ghcr.io/stefanprodan/podinfo:6.2.0
 ---
 name: manifests
-type: kustomize.ocm.fluxcd.io
+type: Directory
 input:
   type: dir
   path: ./manifests
-  compress: true
+  compress: false
