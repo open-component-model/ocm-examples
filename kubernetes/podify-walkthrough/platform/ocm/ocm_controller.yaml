@@ -88,8 +88,7 @@ spec:
                             type: boolean
                           value:
                             description: Value is the json/yaml data of the label
-                            format: byte
-                            type: string
+                            x-kubernetes-preserve-unknown-fields: true
                           version:
                             description: Version is the optional specification version
                               of the attribute value
@@ -164,8 +163,7 @@ spec:
                             type: boolean
                           value:
                             description: Value is the json/yaml data of the label
-                            format: byte
-                            type: string
+                            x-kubernetes-preserve-unknown-fields: true
                           version:
                             description: Version is the optional specification version
                               of the attribute value
@@ -210,8 +208,7 @@ spec:
                                 value:
                                   description: Value is the json/yaml data of the
                                     label
-                                  format: byte
-                                  type: string
+                                  x-kubernetes-preserve-unknown-fields: true
                                 version:
                                   description: Version is the optional specification
                                     version of the attribute value
@@ -273,8 +270,7 @@ spec:
                             type: boolean
                           value:
                             description: Value is the json/yaml data of the label
-                            format: byte
-                            type: string
+                            x-kubernetes-preserve-unknown-fields: true
                           version:
                             description: Version is the optional specification version
                               of the attribute value
@@ -391,6 +387,16 @@ spec:
                 required:
                 - url
                 type: object
+              serviceAccountName:
+                description: ServiceAccountName can be used to configure access to
+                  both destination and source repositories. If service account is
+                  defined, it's usually redundant to define access to either source
+                  or destination, but it is still allowed to do so. https://kubernetes.io/docs/tasks/configure-pod-container/configure-service-account/#add-imagepullsecrets-to-a-service-account
+                type: string
+              suspend:
+                description: Suspend stops all operations on this component version
+                  object.
+                type: boolean
               verify:
                 items:
                   description: Signature defines the details of a signature to use
@@ -790,6 +796,9 @@ spec:
                     - name
                     type: object
                 type: object
+              suspend:
+                description: Suspend stops all operations on this object.
+                type: boolean
               values:
                 x-kubernetes-preserve-unknown-fields: true
             required:
@@ -1143,6 +1152,9 @@ spec:
                     - name
                     type: object
                 type: object
+              suspend:
+                description: Suspend stops all operations on this object.
+                type: boolean
               values:
                 x-kubernetes-preserve-unknown-fields: true
             required:
@@ -1358,6 +1370,9 @@ spec:
                 required:
                 - name
                 type: object
+              suspend:
+                description: Suspend stops all operations on this object.
+                type: boolean
             required:
             - componentVersionRef
             - interval
@@ -1505,6 +1520,12 @@ spec:
                   a hash that is then used by the caching layer to identify an entry.
                 maxProperties: 20
                 type: object
+<<<<<<< HEAD
+=======
+              suspend:
+                description: Suspend stops all operations on this object.
+                type: boolean
+>>>>>>> 57b3bcf (update manifests)
               tag:
                 type: string
             required:
@@ -1916,7 +1937,7 @@ spec:
         - --oci-registry-addr=registry.ocm-system.svc.cluster.local:5000
         command:
         - /manager
-        image: ghcr.io/open-component-model/ocm-controller:v0.5.0
+        image: ghcr.io/open-component-model/ocm-controller
         imagePullPolicy: Always
         livenessProbe:
           httpGet:
@@ -1944,7 +1965,7 @@ spec:
             drop:
             - ALL
       initContainers:
-      - image: ghcr.io/open-component-model/ocm-registry:v0.5.0
+      - image: ghcr.io/open-component-model/ocm-registry
         imagePullPolicy: IfNotPresent
         name: init-registry
       securityContext:

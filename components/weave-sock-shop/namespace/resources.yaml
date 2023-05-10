@@ -1,6 +1,0 @@
-name: manifests
-type: kustomize.ocm.fluxcd.io
-input:
-  type: dir
-  path: ./kubernetes
-  compress: true

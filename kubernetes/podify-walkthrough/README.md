@@ -153,7 +153,7 @@ spec:
 
 The Unpacker custom resource allows us to automate the process of extracting a resource from a component and executing localization or configuration. With many resources, these tasks could become laborious. To reduce the toil involved we provide a pipeline template in `spec.pipelineTemplateRef` which defines a set of Kuberenetes resources to be created for each item selected by the Unpacker's resource selector (`spec.resourceSelector`).
 
-The pipeline template is a go-template that contains a resource, localization, configuration, Flux OCI Repository and a Flux Kustomization:
+The pipeline template is a go-template that custom resources for `Resource`, `Localization`, and `Configuration`:
 
 <details>
   <summary>Expand to view template...</summary>
@@ -174,18 +174,17 @@ steps:
       namespace: {{ .Component.Namespace }}
     spec:
       interval: 1m0s
-      componentVersionRef:
-        name: {{ .Component.Name }}
+      sourceRef:
+        kind: ComponentVersion
+        name: podify
         namespace: {{ .Component.Namespace }}
-      resource:
-        name: {{ .Resource }}
-        {{ with .Component.Reference  }}
-        referencePath:
-          - name: {{ . }}
-        {{ end }}
-      snapshotTemplate:
-        name: {{ .Parameters.Name }}
-        tag: latest
+        resourceRef:
+          name: {{ .Resource }}
+          version: latest
+          {{ with .Component.Reference  }}
+          referencePath:
+            name: {{ . }}
+          {{ end }}
 - name: localize
   template:
     apiVersion: delivery.ocm.software/v1alpha1
@@ -195,23 +194,20 @@ steps:
       namespace: {{ .Component.Namespace }}
     spec:
       interval: 1m0s
-      componentVersionRef:
-        name: {{ .Component.Name }}
-        namespace: {{ .Component.Namespace }}
       sourceRef:
-        kind: Snapshot
+        kind: Resource
         name: {{ .Parameters.Name }}
         namespace: {{ .Component.Namespace }}
       configRef:
-        resource:
+        kind: ComponentVersion
+        name: podify
+        namespace: {{ .Component.Namespace }}
+        resourceRef:
           name: config
           {{ with .Component.Reference  }}
           referencePath:
             - name: {{ . }}
           {{ end }}
-      snapshotTemplate:
-        name: {{ .Parameters.Name }}-localized
-        tag: latest
 - name: config
   template:
     apiVersion: delivery.ocm.software/v1alpha1
@@ -221,39 +217,38 @@ steps:
       namespace: {{ .Component.Namespace }}
     spec:
       interval: 1m0s
-      componentVersionRef:
-        name: {{ .Component.Name }}
-        namespace: {{ .Component.Namespace }}
       sourceRef:
-        kind: Snapshot
-        name: {{ .Parameters.Name }}-localized
+        kind: Localization
+        name: {{ .Parameters.Name }}
         namespace: {{ .Component.Namespace }}
       configRef:
-        resource:
+        kind: ComponentVersion
+        name: podify
+        namespace: {{ .Component.Namespace }}
+        resourceRef:
           name: config
           {{ with .Component.Reference  }}
           referencePath:
             - name: {{ . }}
           {{ end }}
       values: {{ .Values | toYaml | nindent 8 }}
-      snapshotTemplate:
-        name: {{ .Parameters.Name }}-configured
-        createFluxSource: true
 - name: flux-kustomization
   template:
-    apiVersion: kustomize.toolkit.fluxcd.io/v1beta2
-    kind: Kustomization
+    apiVersion: delivery.ocm.software/v1alpha1
+    kind: FluxDeployer
     metadata:
-      name: {{ .Parameters.Name }}
-      namespace: {{ .Component.Namespace }}
+      name: podinfo
+      namespace: ocm-system
     spec:
-      interval: 1m0s
-      prune: true
-      targetNamespace: default
       sourceRef:
-        kind: OCIRepository
-        name: {{ .Parameters.Name }}-configured
-      path: ./
+        kind: Configuration
+        name: {{ .Parameters.Name }}
+        namespace: {{ .Component.Namespace }}
+      kustomizationTemplate:
+        interval: 1m0s
+        path: ./
+        prune: true
+        targetNamespace: default
 ```
 </details>
 
