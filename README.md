@@ -1,6 +1,6 @@
 # Open Component Model Examples
 
-[![REUSE status](https://api.reuse.software/badge/github.com/open-component-model/ocm)](https://api.reuse.software/info/github.com/open-component-model/ocm)
+[![REUSE status](https://api.reuse.software/badge/github.com/open-component-model/ocm)](https://api.reuse.software/info/github.com/open-component-model/ocm-examples)
 
 This repository contains example components and demonstrations of their usage.
 
