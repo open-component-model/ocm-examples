@@ -1,0 +1,45 @@
+components:
+# podinfo component
+- name: ${COMPONENT_NAME_PREFIX}/podinfo
+  labels:
+  - name: "org.opencontainers.image.source"
+    value: "https://github.com/stb1337/ocm-hello-world-v1"  
+  version: ${PODINFO_VERSION}
+  provider:
+    name: ${PROVIDER}
+  resources:
+  - name: helm-chart-external
+    type: helmChart
+    version: ${PODINFO_VERSION}
+    relation: external
+    access:
+      type: helm
+      helmChart: podinfo:${PODINFO_CHART_VERSION}
+      helmRepository: https://stefanprodan.github.io/podinfo
+  - name: helm-chart-local-tgz
+    type: helmChart    
+    input:      
+      type: helm      
+      path: podinfo-${PODINFO_CHART_VERSION}.tgz      
+  - name: helm-chart-local-folder
+    type: helmChart
+    relation: local
+    version: ${PODINFO_VERSION}
+    input:
+      type: dir
+      path: ./podinfo/
+  - name: manifests
+    type: dir
+    relation: local
+    input:
+      type: dir
+      path: ./podinfo-manifest
+      compress: true
+  - name: image
+    type: ociImage
+    version: ${PODINFO_VERSION}
+    access:
+      type: ociArtifact
+      repository: ocm/ocm.software/podinfo/image
+      imageReference: ghcr.io/stefanprodan/podinfo:${PODINFO_VERSION}
+  

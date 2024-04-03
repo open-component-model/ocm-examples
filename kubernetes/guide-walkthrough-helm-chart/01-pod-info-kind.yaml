@@ -1,0 +1,132 @@
+apiVersion: delivery.ocm.software/v1alpha1
+kind: ComponentVersion
+metadata:
+  name: ocm-hello-world-podinfo
+  namespace: ocm-system
+spec:
+  component: ocm.software/podinfo
+  interval: 10s
+  references:
+    expand: true
+  repository:
+    url: ghcr.io/stb1337/ocm-hello-world-v1
+    secretRef:
+      name: ghcr-pull-secret
+  version:
+    semver: "6.6.0"
+---
+apiVersion: delivery.ocm.software/v1alpha1
+kind: Resource
+metadata:
+  name: ocm-hello-world-podinfo-helm-chart-external
+  namespace: ocm-system
+spec:
+  interval: 10s
+  sourceRef:
+    apiVersion: delivery.ocm.software/v1alpha1
+    kind: ComponentVersion
+    name: ocm-hello-world-podinfo
+    namespace: ocm-system
+    resourceRef:
+      name: helm-chart-external
+      version: "6.6.0"
+      extraIdentity:
+        helmChart: podinfo
+---
+apiVersion: delivery.ocm.software/v1alpha1
+kind: FluxDeployer
+metadata:
+  name: ocm-hello-world-podinfo-helm-chart-external
+  namespace: ocm-system
+spec:
+  interval: 10s
+  sourceRef:
+    apiVersion: delivery.ocm.software/v1alpha1
+    kind: Resource
+    name: ocm-hello-world-podinfo-helm-chart-external
+  helmReleaseTemplate:
+    chart: 
+      spec: 
+        chart: "podinfo"
+        interval: 10s
+    values:      
+      replicaCount: 3
+      image:
+        repository: ghcr.io/stb1337/ocm-hello-world-v1/stefanprodan/podinfo
+      ui:
+        color: "#8F00FF"
+        message: "Hello from remote referenced Helm Chart"      
+      serviceAccount:        
+        enabled: true        
+        name: "sa-podinfo-ghcr-io-1"
+        imagePullSecrets:
+        - name: pull-secret
+    interval: 10s
+    releaseName: "podinfo-helm-chart-external"
+    targetNamespace: default
+---
+apiVersion: delivery.ocm.software/v1alpha1
+kind: Resource
+metadata:
+  name: ocm-hello-world-podinfo-helm-chart-local-tgz
+  namespace: ocm-system
+spec:
+  interval: 10s
+  sourceRef:
+    apiVersion: delivery.ocm.software/v1alpha1
+    kind: ComponentVersion
+    name: ocm-hello-world-podinfo
+    namespace: ocm-system
+    resourceRef:
+      name: helm-chart-local-tgz
+      version: "6.6.0"
+      extraIdentity:
+        helmChart: podinfo # name of the chart
+---
+apiVersion: delivery.ocm.software/v1alpha1
+kind: FluxDeployer
+metadata:
+  name: ocm-hello-world-podinfo-helm-chart-local-tgz
+  namespace: ocm-system
+spec:
+  interval: 10s
+  sourceRef:
+    apiVersion: delivery.ocm.software/v1alpha1
+    kind: Resource
+    name: ocm-hello-world-podinfo-helm-chart-local-tgz
+  helmReleaseTemplate:
+    chart: 
+      spec: 
+        chart: "podinfo"
+        interval: 10s        
+    values:
+      replicaCount: 2
+      image:
+        repository: ghcr.io/stb1337/ocm-hello-world-v1/stefanprodan/podinfo
+      ui:
+        color: "#FFC0CB"
+        message: "Hello from local .tar file Helm Chart"        
+      serviceAccount:        
+        enabled: true        
+        name: "sa-podinfo-ghcr-io-2"
+        imagePullSecrets:
+        - name: pull-secret
+    interval: 10s
+    releaseName: "podinfo-helm-chart-local-tgz"
+    targetNamespace: default    
+---
+apiVersion: delivery.ocm.software/v1alpha1
+kind: Resource
+metadata:
+  name: ocm-hello-world-podinfo-image
+  namespace: ocm-system
+spec:
+  interval: 10s
+  sourceRef:
+    apiVersion: delivery.ocm.software/v1alpha1
+    kind: ComponentVersion
+    name: ocm-hello-world-podinfo
+    namespace: ocm-system
+    resourceRef:
+      name: image
+      version: "6.6.0"
