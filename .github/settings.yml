@@ -1,0 +1,10 @@
+# These settings are synced to GitHub by https://probot.github.io/apps/settings/
+
+# see: https://github.com/open-component-model/.github/blob/main/.github/settings.yml
+_extends: .github
+
+topics: cloud-native, delivery, flux, gitops, kubernetes, ocm, open-component-model, software-delivery, software-delivery-automation, supply-chain
+
+labels:
+- name: repo/ocm-examples
+  color: bfd4f2

@@ -1,3 +1,4 @@
 local/
 *.sw[pq]
 /gen
+/.project
